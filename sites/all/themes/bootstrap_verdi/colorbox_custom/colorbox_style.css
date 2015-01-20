@@ -1,0 +1,439 @@
+/**
+ * Colorbox Core Style:
+ * The following CSS is consistent between example themes and should not be altered.
+ */
+#colorbox, #cboxOverlay, #cboxWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  overflow: hidden;
+}
+#cboxOverlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+#cboxMiddleLeft, #cboxBottomLeft {
+  clear: left;
+}
+#cboxContent {
+  position: relative;
+}
+#cboxLoadedContent {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#cboxTitle {
+  margin: 0;
+}
+#cboxLoadingOverlay, #cboxLoadingGraphic {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+/**
+ * These elements are buttons, and may need to have additional
+ * styles reset to avoid unwanted base styles.
+ */
+#cboxPrevious, #cboxNext, #cboxClose, #cboxSlideshow {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  width: auto;
+  background: none;
+  cursor: pointer;
+}
+/**
+ * Avoid outlines on :active (mouseclick),
+ * but preserve outlines on :focus (tabbed navigating)
+ */
+#cboxPrevious:active, #cboxNext:active, #cboxClose:active, #cboxSlideshow:active {
+  outline: 0;
+}
+.cboxPhoto {
+  float: left;
+  margin: auto;
+  border: 0;
+  display: block;
+  max-width: none;
+}
+.cboxIframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+}
+/* Reset box sizing to content-box if theme is using border-box. */
+#colorbox, #cboxContent, #cboxLoadedContent {
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;
+}
+
+/**
+ * Colorbox module default style:
+ * The styles are ordered & tabbed in a way that represents
+ * the nesting of the generated HTML.
+ */
+#cboxOverlay {
+  background: #000;
+}
+#colorbox {
+  outline: 0;
+}
+#cboxWrapper {
+  background: #fff;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  width:auto!important;
+  height:auto!important;
+}
+#cboxTopLeft {
+  width: 15px;
+  height: 15px;
+}
+#cboxTopCenter {
+  height: 15px;
+}
+#cboxTopRight {
+  width: 15px;
+  height: 15px;
+}
+#cboxBottomLeft {
+  width: 15px;
+  height: 10px;
+}
+#cboxBottomCenter {
+  height: 10px;
+}
+#cboxBottomRight {
+  width: 15px;
+  height: 10px;
+}
+#cboxMiddleLeft {
+  width: 15px;
+}
+#cboxMiddleRight {
+  width: 15px;
+}
+#cboxContent {
+  background: #fff;
+  overflow: hidden;
+}
+#cboxError {
+  padding: 50px;
+  border: 1px solid #ccc;
+}
+#cboxLoadedContent {
+  margin-bottom: 28px;
+}
+#cboxTitle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.7);
+  bottom: 28px;
+  left: 0;
+  color: #535353;
+  width: 100%;
+  padding: 4px 6px;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+#cboxCurrent {
+  position: absolute;
+  bottom: 4px;
+  left: 60px;
+  color: #949494;
+}
+.cboxSlideshow_on #cboxSlideshow {
+  position: absolute;
+  bottom: 0px;
+  right: 30px;
+  background: url(images/controls.png) no-repeat -75px -50px;
+  width: 25px;
+  height: 25px;
+  text-indent: -9999px;
+}
+.cboxSlideshow_on #cboxSlideshow:hover {
+  background-position: -101px -50px;
+}
+.cboxSlideshow_off #cboxSlideshow {
+  position: absolute;
+  bottom: 0px;
+  right: 30px;
+  background: url(images/controls.png) no-repeat -25px -50px;
+  width: 25px;
+  height: 25px;
+  text-indent: -9999px;
+}
+.cboxSlideshow_off #cboxSlideshow:hover {
+  background-position: -49px -50px;
+}
+#cboxPrevious {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: url(images/controls.png) no-repeat -75px 0px;
+  width: 25px;
+  height: 25px;
+  text-indent: -9999px;
+}
+#cboxPrevious:hover {
+  background-position: -75px -25px;
+}
+#cboxNext {
+  position: absolute;
+  bottom: 0;
+  left: 27px;
+  background: url(images/controls.png) no-repeat -50px 0px;
+  width: 25px;
+  height: 25px;
+  text-indent: -9999px;
+}
+#cboxNext:hover {
+  background-position: -50px -25px;
+}
+#cboxLoadingOverlay {
+  background: #fff;
+}
+#cboxLoadingGraphic {
+  background: url(images/loading_animation.gif) no-repeat center center;
+}
+#cboxClose {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: url(images/controls.png) no-repeat -25px 0px;
+  width: 25px;
+  height: 25px;
+  text-indent: -9999px;
+}
+#cboxClose:hover {
+  background-position: -25px -25px;
+}
+
+/******************************************************************************/
+/*-------------------------Свои стили для каталога----------------------------*/
+/******************************************************************************/
+#colorbox.product_card {
+  font-family: "Sans", "Open Sans";
+}
+
+#colorbox.product_card article header {
+  display: none;
+}
+
+#colorbox.product_card article .commerce-add-to-cart button {
+  background-image: url('/sites/default/files/images/product_card_buttons.png');
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+  width: 25px;
+  height: 25px;
+  background-size: 75px;
+  background-position: -50px;
+  font-size: 0px;
+  padding: 0px;
+  outline:0;
+}
+
+#colorbox.product_card article .commerce-add-to-cart button.loade {
+	background:url('/sites/all/themes/bootstrap_verdi/colorbox_custom/images/crt-loader.gif') center center no-repeat;
+	background-size: 25px;
+  background-position:0 0;
+}
+
+#colorbox.product_card article .commerce-product-field-field-roll-width {
+  border: 2px solid #999;
+  padding: 5px 6px 3px 12px;
+  border-radius: 4px;
+  background-image: url('/sites/default/files/images/size_arrow.png');
+  background-repeat: no-repeat;
+  background-position: 4px 7px;
+  width: 56px;
+  height: 35px;
+  font-size: 12px;
+  position: absolute;
+  right: 165px;
+  top: 10px;
+}
+
+#colorbox.product_card article .commerce-product-field-field-roll-width a {
+  color: #000;
+}
+
+#colorbox.product_card article .field-name-title-field .field-label {
+  display: none;
+}
+
+#colorbox.product_card article .field-name-field-photos .field-item {
+  text-align: center;
+}
+
+#colorbox.product_card article .field-name-title-field .field-items {
+  font-size: 17px;
+  color: #000;
+  font-weight: bold;
+}
+
+#colorbox.product_card article .field-name-field-fabric-composition .field-label {
+  float: left;
+}
+
+#colorbox.product_card article .field-name-field-operating-parameters .field-label {
+  display: none;
+}
+
+#colorbox.product_card article .commerce-product-field-field-roll-width .field-label {
+  font-size: 8px;
+  line-height: 0.5;
+  padding-top: 3px;
+}
+
+#colorbox.product_card article .field-name-field-photos {
+  margin-bottom: 10px;
+}
+
+#colorbox.product_card article .commerce-product-field-commerce-price {
+  position: absolute;
+  bottom: 25px;
+  right: -15px;
+  background-color: #95248a;
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 10px 0px 0px 10px;
+  padding: 17px 15px 17px 15px;
+  min-width: 140px;
+  box-shadow: 0px 0px 0px 4px rgba(149, 36, 138, 0.2);
+}
+
+#colorbox.product_card article .product_cell_1 {
+  width: 148px;
+  position: relative;
+}
+
+#colorbox.product_card article .product_cell_2 {
+  position: relative;
+  width: auto;
+}
+
+#colorbox.product_card article .product_cell_3 {
+  width: 295px;
+  position: relative;
+}
+
+#colorbox.product_card article .commerce-product-field-field-operating-parameters {
+  background-image: url('/sites/default/files/images/operaiting_30.png');
+  width: 32px;
+  height: 25px;
+  position: absolute;
+  top: 18px;
+  right: 250px;
+}
+
+#colorbox.product_card article .product_cell_1 .like {
+  background-image: url('/sites/default/files/images/product_card_buttons.png');
+  width: 25px;
+  height: 24px;
+  background-size: 75px;
+  display: inline-block;
+  margin: 0px 8px;
+  float: left;
+}
+
+#colorbox.product_card article .product_cell_1 .flag-outer-bookmarks {
+  font-size: 0px;
+  margin: 0px 8px;
+  float: left;
+}
+
+#colorbox.product_card article .product_cell_1 .flag-outer-bookmarks a {
+  background-image: url('/sites/default/files/images/product_card_buttons.png');
+  width: 25px;
+  height: 24px;
+  background-size: 75px;
+  display: inline-block;
+}
+
+#colorbox.product_card article .product_cell_1 .like {
+  background-position: -26px;
+  width: 24px;
+  margin: 0px 8px;
+}
+
+#colorbox.product_card article .commerce-add-to-cart .form-group {
+  margin-bottom: 0px;
+}
+
+#colorbox.product_card article .field-name-field-product {
+  float: left;
+  margin: 0px 8px;
+}
+
+#colorbox.product_card article .product_table_separator {
+  height: 40px;
+  width: 0px;
+  border: 1px solid #e4e4e4;
+  position: absolute;
+  right: 7px;
+  top: 12px;
+}
+
+#colorbox.product_card #cboxContent {
+  border-radius: 8px;
+  overflow: visible;
+}
+
+#colorbox.product_card #cboxClose:hover,
+#colorbox.product_card #cboxPrevious:hover,
+#colorbox.product_card #cboxNext:hover {
+  opacity: 1;
+}
+
+#colorbox.product_card #cboxClose,
+#colorbox.product_card #cboxPrevious,
+#colorbox.product_card #cboxNext {
+  background-position: center;
+  opacity: 0.5;
+  top: 0px;
+}
+
+#colorbox.product_card #cboxClose {
+  position: fixed;
+  background-image: url('/sites/default/files/images/product_slider_control_close.png');
+  width: 50px;
+  height: 50px;
+  right: 0px;
+}
+
+#colorbox.product_card #cboxPrevious {
+  position: absolute;
+  background-image: url('/sites/default/files/images/product_slider_control_left.png');
+  width: 100px;
+  height: 100%;
+  left: -100px;
+}
+
+#colorbox.product_card #cboxNext {
+  position: absolute;
+  background-image: url('/sites/default/files/images/product_slider_control_right.png');
+  width: 100px;
+  height: 100%;
+  right: -100px;
+  left: inherit;
+}
+
+#colorbox.product_card #cboxNext:focus {
+  outline: none;
+}
+
+
+/******************************************************************************/
+/*----------------------Конец свои стили для каталога-------------------------*/
+/******************************************************************************/

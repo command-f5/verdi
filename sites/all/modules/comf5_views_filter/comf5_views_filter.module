@@ -1,0 +1,73 @@
+<?php
+/*
+ * name: comf5_views_filter_views_query_alter
+ * Хук, изменяющий фльтр представления каталога такоим образом, что изменение
+ * поля "вид продукции" показывает не только товары выбранного термина, но и
+ * товары дочерних терминов.
+ */
+function comf5_views_filter_views_query_alter(&$view, &$query) {
+  //Проверка имени представления. Мы ведь не хотим ломать все представления?
+  if ($view->name == 'catalog') {
+    foreach ($query->where as &$condition_group) {
+      foreach ($condition_group['conditions'] as $unset_key => &$conditions) {
+        //фильтр по условиям в сформированном забросе к БД
+        if (gettype($conditions['field']) == 'object' && get_class($conditions['field']) == 'DatabaseCondition') {
+          $condition = &$conditions['field']->conditions();
+          //берём только тип продукции
+          if (strpos($condition[0]['field'], 'field_product_kind_tid') !== false) {
+            foreach ($condition as $key => $condition2) {
+              if ($key === '#conjunction') {
+                continue;
+              }
+              //получаем ИД дочерних терминов таксономии.
+              $taxonomy_childrens = taxonomy_get_children($condition2['value']);
+              if (count($taxonomy_childrens) > 0) {  
+                $DatabaseCondition = &$conditions['field'];
+                $i = substr($condition[0]['field'], 36, 1);
+                //в цикле добавляем для каждого дочернего термина таксономии условие
+                //в запрос к БД.
+                foreach ($taxonomy_childrens as $term) {
+                  //Там много разделов. Сначала table_queue
+                  $table_queue = $query->table_queue['field_data_field_product_kind_value_'.$i];
+                  $i++;
+                  $table_queue['num'] = $i+1;
+                  $table_queue['alias'] = 'field_data_field_product_kind_value_'.$i;
+                  $join = clone $table_queue['join'];
+                  $join->extra[0]['value'] = $term->tid;
+                  $table_queue['join'] = $join;
+                  $query->table_queue[('field_data_field_product_kind_value_'.$i)] = $table_queue;
+                  unset($table_queue, $extra);
+
+                  //затем tables
+                  $tables = &$query->tables;
+                  $tables['commerce_product']['field_data_field_product_kind']['count']++;
+                  $tables['commerce_product']['field_data_field_product_kind_value_'.$i] = array(
+                    'count' => 1,
+                    'alias' => 'field_data_field_product_kind_value_'.$i,
+                  );
+
+                  //собственно, where
+                  $DatabaseCondition = $DatabaseCondition->condition(
+                    'field_data_field_product_kind_value_'.$i.'.field_product_kind_tid',
+                    $term->tid, 
+                    '='
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/*
+ * name: comf5_views_filter_views_query_alter
+ * Хук, изменяющий фльтр представления каталога такоим образом, что
+ */
+function comf5_views_filter_form_views_exposed_form_alter(&$form, &$form_state, $form_id) {
+  $form['field_hot_offer_value']['#options'] = array(1 => 'Горячее предложение');
+  $form['field_new_value']['#options'] = array(1 => 'Новинка');
+  //dvm($form['field_hot_offer_value']);
+}

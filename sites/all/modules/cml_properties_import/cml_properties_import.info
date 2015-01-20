@@ -1,0 +1,10 @@
+name = CML Properties import
+description = Import products properties from 1C classificator to a taxonomy vocabulary
+package = "Import KIT"
+
+dependencies[] = importkit
+dependencies[] = node
+
+version = "7.x-0.7-dev"
+core = "7.x"
+

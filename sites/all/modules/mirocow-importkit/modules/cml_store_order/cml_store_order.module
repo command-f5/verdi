@@ -1,0 +1,519 @@
+<?php
+
+function cml_store_order_importkit_info()
+{
+  $path = drupal_get_path('module', 'cml_store_order') . '/listners';
+
+  return array(
+    'ImportkitListnerOrder' => $path . '/ImportkitListnerOrder',
+  );
+}
+
+/**
+* Сoздание заявки по хуку (общая часть для Commerce и Ubercart)
+*
+* Обработать заказ и сформировать файл в каталоге (в формате CommerceML) для обмена с 1С
+* @param mixed $orders - параметры файла заказа, сформированные из сущности заказа Drupal
+*/
+function cml_store_order_create_orders($params)
+{
+  global $user;
+  extract($params);
+
+  // создание файла ордера
+  $timechange = time();
+  $no_spaces = '<?xml version="1.0" encoding="windows-1251"?>
+  <КоммерческаяИнформация ВерсияСхемы="2.05"
+    ДатаФормирования="' . date ( 'Y-m-d', $timechange ) . 'T' . date ( 'H:m:s', $timechange ) . '"
+    ФорматДаты="ДФ=yyyy-MM-dd; ДЛФ=DT"
+    ФорматВремени="ДФ=ЧЧ:мм:сс; ДЛФ=T"
+    РазделительДатаВремя="T"
+    ФорматСуммы="ЧЦ=18; ЧДЦ=2; ЧРД=."
+    ФорматКоличества="ЧЦ=18; ЧДЦ=2; ЧРД=.">
+  </КоммерческаяИнформация>';
+
+  $xml = @new SimpleXMLElement ( importkit_convert('utf-8', 'windows-1251', $no_spaces) );
+
+  if(!is_object($xml)) {
+    return; // TODO:// написать ругательство
+  }
+
+  $doc = $xml->addChild ( "Документ" );
+
+  // Шапка
+  $doc->addChild ( "Ид", $order_id );
+  $doc->addChild ( "Номер", $order_id );
+  $doc->addChild ( "Дата", date ( 'Y-m-d', $created ) );
+  $doc->addChild ( "ХозОперация", "Заказ товара" );
+  $doc->addChild ( "Роль", "Продавец" );
+  $doc->addChild ( "Валюта", variable_get('importkit_order_curency', 'руб.') );
+  $doc->addChild ( "Курс", 1 );
+  $doc->addChild ( "Сумма", $order_total );
+
+  // Контрагенты
+  $k = $doc->addChild ( 'Контрагенты' );
+    $_k = $k->addChild ( 'Контрагент' );
+
+    $account = user_load($order->uid);
+    $account_1c_id = "{$account->uid}#{$account->name}#";
+
+    $_k->addChild ("Ид", $account_1c_id);
+
+    // $FIO = $last_name . " " . $first_name . " " . $patronymic_name;
+    $FIO = $last_name . " " . $first_name;
+
+    // Наименование используется для идентификации в 1С, поэтому должно быть гарантированно уникальным (содержать ИД)
+    $_k->addChild ("Наименование", $account_1c_id);
+    // ФИО сохраняется в "Полное Наименование" потому что ФИО пользователь может впоследствии отредактировать.
+    // Плюс к тому, 1С сама дописывает потом к Полному Наименование ещё раз Имя Отчество.
+    $_k->addChild ("ПолноеНаименование", $account_1c_id.$FIO);
+
+    $_k1 = $_k->addChild ( 'АдресРегистрации' );
+      $_k2 = $_k1->addChild ( 'Представление', $city. ', '. $street1);
+      $_k2 = $_k1->addChild ( 'АдресноеПоле');
+      $_k2->addChild('Тип', 'Почтовый индекс');
+      $_k2->addChild('Значение', $postal_code);
+      $_k2 = $_k1->addChild ( 'АдресноеПоле');
+      $_k2->addChild('Тип', 'Страна');
+      $_k2->addChild('Значение', $country);
+      $_k2 = $_k1->addChild ( 'АдресноеПоле');
+      $_k2->addChild('Тип', 'Город');
+      $_k2->addChild('Значение', $city);
+
+      $_k1 = $_k->addChild ( 'Контакты' );
+      $_k2 = $_k1->addChild ( 'Контакт' );
+      $_k2->addChild('Тип', 'Почта');
+      $_k2->addChild('Значение', $email);
+      $_k2 = $_k1->addChild ( 'Контакт' );
+      $_k2->addChild('Тип', 'Телефон');
+      $_k2->addChild('Значение', $phone);
+
+    $_k->addChild ("Имя", $first_name );
+    $_k->addChild ("Фамилия", $last_name );
+    $_k->addChild ("Роль", "Покупатель" );
+
+  $doc->addChild ( "Время", date ( 'H:m:s', $created ) );
+
+  // Комментарий
+  if(isset($comments)) {
+    $doc->addChild ( "Комментарий",  $comments);
+  }
+
+  // Скидки уровня заказа
+  if(isset($order_discounts) && count($order_discounts)) {
+    $d_0 = $doc->addChild ( "Скидки" );
+    // dpm($order_discounts);
+    foreach ($order_discounts as $ord_d) {
+      $d_1 = $d_0->addChild( "Скидка" );
+        $d_1->addChild( "Наименование", $ord_d['name']);
+        $d_1->addChild( "Сумма", abs($ord_d['amount']) / 100);
+        $d_1->addChild( "Процент", "0" );
+        // $d_1->addChild( "Комментарий", "Скидка заказа ({$ord_d['name']})");
+    }
+  }
+
+  $t1 = $doc->addChild ( 'Товары' );
+
+  foreach($products as $product)
+  {
+    // Доставка товара
+    $t1_1 = $t1->addChild ( 'Товар' );
+
+    $t1_2 = $t1_1->addChild ( "Ид", (isset($product->guid)? $product->guid: 'ORDER_DELIVERY') );
+
+    $t1_2 = $t1_1->addChild ( "Наименование", $product->title );
+
+    // Необязательные поля
+    $t1_2 = $t1_1->addChild ( "ЗначенияРеквизитов" );
+    $t1_3 = $t1_2->addChild ( 'ЗначениеРеквизита');
+      $_k4 = $t1_3->addChild ( 'Наименование', 'ВидНоменклатуры');
+      $_k4 = $t1_3->addChild ( 'Значение', 'Товар');
+    $t1_3 = $t1_2->addChild ( 'ЗначениеРеквизита');
+      $_k4 = $t1_3->addChild ( 'Наименование', 'ТипНоменклатуры');
+      $_k4 = $t1_3->addChild ( 'Значение', 'Товар');
+
+    if(isset($product->model))
+    {
+      $t1_2 = $t1_1->addChild ( "ИдКаталога", $product->model );
+    }
+
+    $t1_2 = $t1_1->addChild ( "ЦенаЗаЕдиницу", (double)$product->price );
+    $t1_2 = $t1_1->addChild ( "Количество", $product->qty );
+
+    $total = (double)($product->qty*(double)$product->price) / variable_get('importkit_product_retail_price_rate', 1);
+
+    $t1_2 = $t1_1->addChild ( "Сумма", $total );
+
+    // Скидки уровня товара
+    if (isset($product->discounts) && count($product->discounts)) {
+      $t1_2 = $t1_1->addChild ( "Скидки" );
+      foreach ($product->discounts as $prod_d) {
+        $t1_3 = $t1_2->addChild( "Скидка" );
+          $t1_3->addChild( "Наименование", $prod_d['name']);
+          $t1_3->addChild( "Сумма", abs($prod_d['amount']) / 100);
+          $t1_3->addChild( "Процент", "0");
+          // $t1_3->addChild( "Комментарий", "" );
+      }
+    }
+
+  }
+
+ $t1 = $doc->addChild ( 'ЗначенияРеквизитов' );
+
+  // Статус платежа
+  if($payment_method) {
+    $t2 = $t1->addChild ( 'ЗначениеРеквизита' );
+      $t2->addChild('Наименование', 'Дата оплаты');
+      $t2->addChild('Значение', date ('Y-m-d h:i:s', $payment_received)); //2011-09-04 07:32:15
+
+    $t2 = $t1->addChild ( 'ЗначениеРеквизита' );
+      $t2->addChild('Наименование', 'Номер платежного документа');
+      $t2->addChild('Значение',  $payment_receipt_id);
+
+    $t2 = $t1->addChild ( 'ЗначениеРеквизита' );
+      $t2->addChild('Наименование', 'Метод оплаты');
+      $t2->addChild('Значение', $payment_method);
+  }
+
+  // Доставка
+  if($shipping) {
+    $t2 = $t1->addChild ( 'ЗначениеРеквизита' );
+      $t2->addChild('Наименование', 'Способ доставки');
+      $t2->addChild('Значение', $shipping['title']);
+  }
+
+  $t2 = $t1->addChild ( 'ЗначениеРеквизита' );
+    $t2->addChild('Наименование', 'Отменен');
+    $t2->addChild('Значение', 'false');
+
+  $t2 = $t1->addChild ( 'ЗначениеРеквизита' );
+    $t2->addChild('Наименование', 'Финальный статус');
+    $t2->addChild('Значение', 'false');
+
+  $t2 = $t1->addChild ( 'ЗначениеРеквизита' );
+    $t2->addChild('Наименование', 'Сайт');
+    $t2->addChild('Значение', 'ImportKit');
+
+  $body = $xml->asXML();
+
+  unset($xml);
+
+  $path = variable_get('importkit_data_path', '');
+
+  $handle = fopen($path.'/order_'.$order_id.'.xml', 'w');
+  fwrite($handle, $body);
+  fclose($handle);
+
+  return true;
+}
+
+// Ubercart
+
+/**
+ * Implementation of hook_uc_order().
+ *
+ * Create order from Ubercart
+ *
+ * @param mixed $op
+ * @param mixed $order
+ * @param mixed $edit
+ */
+function cml_store_order_uc_order($op, $order, $edit = array()){
+  if($op == 'presave'){
+    foreach($order->products as $product){
+      if (!empty($product->data['attributes'])) {
+        if(!isset($product->data['combination'])){
+          $product->data['combination'] = $product->data['attributes'];
+        }
+      }
+    }
+  }
+  if($op == 'save' || $op == 'update'){  // update , total
+  if($order->order_status == variable_get('cml_store_order_state', 'pending'))
+  {
+
+    if(variable_get('cml_store_order_user_info', 0) == 0)
+    {
+      $last_name = $order->billing_last_name;
+      $first_name = $order->billing_first_name;
+      //$middle_name = $order->billing_middle_name;
+      $postal_code = $order->billing_postal_code;
+      $city = $order->billing_city;
+      $country = (int)$order->billing_country;
+      $street1 = $order->billing_street1;
+      $street2 = $order->billing_street2;
+    }else
+    {
+      $last_name = $order->delivery_last_name;
+      $first_name = $order->delivery_first_name;
+      //$middle_name = $order->delivery_middle_name;
+      $postal_code = $order->delivery_postal_code;
+      $city = $order->delivery_city;
+      $country = (int)$order->delivery_country;
+      $street1 = $order->delivery_street1;
+      $street2 = $order->delivery_street2;
+    }
+
+    $comments = uc_order_comments_load($order->order_id);
+    foreach($comments as $comment)
+    {
+      $_comments[] = $comment->message;
+    }
+
+    $payment_received = '';
+    $payment_receipt_id = '';
+    $payment_method = '';
+
+    if(module_exists('uc_payment'))
+    {
+       $payment = uc_payment_load_payments($order->order_id);
+       if($payment && is_array($payment) && count($payment))
+       {
+         $payment_received = $payment[0]->received;
+         $payment_receipt_id = $payment[0]->receipt_id;
+         $payment_method = $payment[0]->method;
+       }
+    }
+
+    // Доставка товара
+    $shipping = array();
+    if($order->line_items &&
+      is_array($order->line_items) &&
+      count($order->line_items))
+      {
+        $is_shipping = FALSE;
+        foreach($order->line_items as $line_item)
+        {
+          if($line_item['type'] == 'shipping'){ $shipping = $line_item; break;}
+        }
+        if($shipping)
+        {
+          $product = (object)array(
+            'title' => $shipping['title'],
+            'price' => $shipping['amount'],
+            'qty' => 1
+          );
+          array_unshift($order->products, $product);
+        }
+    }
+
+    $products = array();
+
+    foreach($order->products as $pid => $product){
+      $product->guid = cml_store_content_get_guid($product);
+      $products[ $pid ] = $product;
+    }
+
+    // Подготовка данных к занесению
+    $params = array(
+      'order' => $order,
+      'order_id' => $order->order_id,
+      'created' => $order->created,
+      'order_total' => $order->order_total,
+      'last_name' => $last_name,
+      'first_name' => $first_name,
+      'patronymic_name' => '',
+      'postal_code' => $postal_code,
+      'city' => $city,
+      'country' => $country,
+      'street1' => $street1,
+      'street2' => $street2,
+      'email' => $order->primary_email,
+      'comments' => isset($_comments)? implode(', ', $_comments): '',
+      'payment_received' => $payment_received,
+      'payment_receipt_id' => $payment_receipt_id,
+      'payment_method' => $payment_method,
+      'shipping' => $shipping,
+      'phone' => '',
+      'products' => $products,
+
+    );
+    return cml_store_order_create_orders($params);
+  }
+  }
+}
+
+function cml_store_order_uc_checkout_complete($order, $account){
+  return cml_store_order_uc_order('save', $order);
+}
+
+// Commerce
+
+/**
+ * Ищем в строке заказа указания на скидки
+ * @param  stdClass $line_item - объект Line Item (загруженая сущность)
+ * @return array               - массив с описаниями скидок [ {discount_name, amount} ].
+ */
+function cml_store_order_get_lineitem_discounts($line_item) {
+  $discounts = array();
+  if (isset($line_item->commerce_unit_price['und'][0]['data']['components'])) {
+    $components = $line_item->commerce_unit_price['und'][0]['data']['components'];
+    if (is_array($components)) {
+      foreach ($components as $component) {
+        if (isset($component['price']['data']['discount_name'])) {
+          $discounts[] = array(
+            'name' => $component['price']['data']['discount_name'],
+            'amount' => $component['price']['amount']
+          );
+        }
+      }
+    }
+  }
+  return $discounts;
+}
+
+function cml_store_order_commerce_order_presave($order) {
+  if($order->status == variable_get('importkit_order_state', 'completed')) {
+    $order_wrapper = entity_metadata_wrapper('commerce_order', $order->order_number);
+
+    $products = array();
+    $all_order_discounts = array(); // скидку уровня заказа
+
+    // проходим по строчкам заказа
+    foreach ($order_wrapper->commerce_line_items as $commerce_line_item) {
+      $line_item_type = $commerce_line_item->type->value();
+      $line_item = $commerce_line_item->value();
+      // dpm($line_item_type);
+
+      switch($line_item_type) {
+
+        case 'commerce_discount':
+          // Это скидка уровня заказа.
+          $order_discount = array(
+            'name' => $line_item->data['discount_name'], // WARN: Поле "data" не является частью схемы...
+            'amount' => $commerce_line_item->commerce_total->amount->value()
+          );
+          $all_order_discounts[] = $order_discount;
+          break;
+
+        case 'userpoints':
+          // Это скидка уровня заказа.
+          $order_discount = array(
+            'name' => 'userpoints',
+            'amount' => $commerce_line_item->commerce_total->amount->value()
+          );
+          $all_order_discounts[] = $order_discount;
+          break;
+
+        case 'product':
+          // это просто товар в заказе
+          $product_wrapper = $commerce_line_item->commerce_product;
+          $product_entity = $commerce_line_item->commerce_product->value();
+
+          $product = new stdClass();
+          $product->pid = $product_wrapper->product_id->raw();
+          $product->guid = cml_store_content_get_guid($product_entity);
+          $product->model = $product_wrapper->sku->value(); // sku
+          $product->title = $product_wrapper->title->value();
+          $product->price = $product_wrapper->commerce_price->amount->value();
+          $product->qty = $commerce_line_item->quantity->value();
+
+          // Ищем скидки уровня товара.
+          $product_discounts = cml_store_order_get_lineitem_discounts($line_item);
+          $product->discounts = $product_discounts;
+
+          $products[$product->pid] = $product;
+          break;
+
+        case 'product_discount':
+          // Я почти уверен, что все line_item-ы этого типа - это бесплатные
+          // продукты (free_product_offer), но тем не менее хочу сделать
+          // дополнительную проверку.
+          $price = $commerce_line_item->commerce_total->amount->value();
+          $product_id = $commerce_line_item->commerce_product->raw();
+          $quantity = $commerce_line_item->quantity->value();
+          if ($price <0 || $quantity <= 0 || $product_id <= 0) {
+            watchdog("cml_stor_order", "Houston, we've got a problem! During processing 'product_discount' line item we found [$product_id][$quantity][$price]", "error");
+            break;
+          }
+
+          if (isset($products[$product_id])) {
+            // Я _предполагаю_, что бесплатные скидочные товары будут идти в заказе ПОСЛЕ
+            // обычных товаров.
+
+            // товар такого вида уже есть в списке - скучкуем их вмести и добавим разницу в цене как скидку
+            $product =& $products[$product_id];
+            $product->qty += $quantity;
+            $product->discounts[] = array(
+              'name' => 'product_discount',
+              'amount' => ($quantity * $product->price - $price)
+            );
+          }
+          else {
+            // товара такого вида нет в заказе.
+            // Если товар совсем-совсем бесплатный, то добавим его со стоимостью 1руб
+            // и добавим скидку на заказ, чтобы скомпенсировать. Иначе просто добавим товар в заказ
+
+            $product_wrapper = $commerce_line_item->commerce_product;
+            $product = new stdClass();
+            $product->pid = $product_id;
+            $product->guid = cml_store_content_get_guid($product_entity);
+            $product->model = $product_wrapper->sku->value(); // sku
+            $product->title = $product_wrapper->title->value();
+            // $product->price = $product_wrapper->commerce_price->amount->value();
+            $product->price = $price ? $price : 100;;
+            $product->qty = $quantity;
+
+            $product->discounts = array();
+            $products[$product->pid] = $product;
+
+            if (!$price) {
+              $order_discount = array(
+                'name' => 'product_discount',
+                'amount' => 100
+              );
+              $all_order_discounts[] = $order_discount;
+            }
+          }
+          break;
+
+        case 'shipping':
+          break;
+        default:
+          // dpm("Unknown line item type: $line_item_type");
+          // dpm($line_item);
+      }
+    }
+
+    // Подгрузка полей профиля
+    // $profile_id = importkit_get_field($order, 'commerce_customer_billing', 0, "['und'][0]['profile_id']");
+    // $profile = commerce_customer_profile_load($profile_id);
+    $profile_wrapper = $order_wrapper->commerce_customer_shipping;
+
+    $comments = '';
+    // Заполняем всеми полями
+    /*foreach($profile as $field_name => $field){
+      $comments .= importkit_get_field($profile, $field_name) . "\n";
+    }*/
+
+    $email = $profile_wrapper->user->mail->value();
+    $email = ($email? $email: $order->mail);
+
+    // Подготовка данных к занесению
+    $params = array(
+      'order'       => $order,
+      'order_id'    => $order_wrapper->order_number->value(),
+      'created'     => $order_wrapper->created->value(),
+      'order_total' => $order_wrapper->commerce_order_total->amount->value(),
+
+      'last_name'   => $profile_wrapper->commerce_customer_address->last_name->value(),
+      'first_name'  => $profile_wrapper->commerce_customer_address->first_name->value(),
+      'country'     => $profile_wrapper->commerce_customer_address->country->value(),
+      'postal_code' => $profile_wrapper->commerce_customer_address->postal_code->value(),
+      'city'        => $profile_wrapper->commerce_customer_address->locality->value(),
+      'street1'     => $profile_wrapper->commerce_customer_address->thoroughfare->value(),
+      'street2'     => $profile_wrapper->commerce_customer_address->premise->value(),
+
+      'email' => $email,
+      'phone' => '',
+      'comments' => $comments,
+      'payment_received' => '',
+      'payment_receipt_id' => '',
+      'payment_method' => '',
+      'shipping' => '',
+      'products' => $products,
+      'order_discounts' => $all_order_discounts,
+    );
+    return cml_store_order_create_orders($params);
+  }
+}

@@ -1,0 +1,47 @@
+<?php
+
+function importkit_api_importkit_node($op, $node, $element) {
+  switch ($op) {
+    case 'create':
+      // Do something
+      // $node->test = 1;
+//      dpm(simpleXMLElement_to_array ($element), 'node: create');
+//      dpm($node, 'node: create (node)');
+      break;
+    case 'update':
+      // Do something
+      // $node->test = 1;
+//      dpm(simpleXMLElement_to_array ($element), 'node: update');
+//      dpm($node, 'node: update (node)');
+      break;
+  }
+}
+
+function importkit_api_importkit_product($op, $product, $element) {
+  switch ($op) {
+    case 'create':
+      // Do something
+      // $product->test = 1;
+//      dpm(simpleXMLElement_to_array ($element), 'product: create');
+//      dpm($product, 'product: create (node)');
+      break;
+    case 'update':
+      // Do something
+      // $product->test = 1;
+//      dpm(simpleXMLElement_to_array ($element), 'product: update');
+//      dpm($product, 'product: update (node)');
+      break;
+  }
+}
+
+function _simpleXMLElement_to_array($sxe) {
+    if ($sxe->count() == 0) 
+        return (string) $sxe;
+    else {
+        $result = array();
+        foreach ($sxe->children() as $childSXE) {
+            $result[$childSXE->getName()] = simpleXMLElement_to_array($childSXE);
+        }
+        return $result;
+    }
+}

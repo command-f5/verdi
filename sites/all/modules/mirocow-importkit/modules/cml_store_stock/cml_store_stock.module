@@ -1,0 +1,228 @@
+<?php
+
+function cml_store_stock_importkit_call_backs()
+{
+	return array(
+		'stock_batch' => 'cml_store_stock_batch',
+		'stock' => 'cml_store_stock_get_stock'
+	);
+}
+
+function cml_store_stock_importkit_info()
+{
+	$path = drupal_get_path('module', 'cml_store_stock') . '/listners';
+
+	return array(
+		'ImportkitListnerStock' => $path . '/ImportkitListnerStock',
+	);
+}
+
+function cml_store_stock_batch($argument, $options, &$context)
+{
+	// bd72d910-55bc-11d9-848a-00112f43529a
+	// bd72d910-55bc-11d9-848a-00112f43529a#1a63e25d-52e6-11e0-9ecf-005056c00008
+	$currentId = md5('offers' . $argument->guid1 . ($argument->guid2?  '#' . $argument->guid2: '' ));
+	$content = cache_get($currentId);
+	if($content)
+	{
+		$result = FALSE;
+		$element = simplexml_load_string(trim($content->data));
+
+		$product_title = (string)$element->Наименование;
+
+		if(!isset($element->Количество))
+		{
+
+			/*$context['message'] = t('<b style="color:grey">The stock is empty in the "cml_store_stock"</b><br>',
+				array(
+					'@argument' => $argument
+				)
+			);
+
+			throw new Exception('The stock is empty in the "cml_store_stock"');*/
+
+			return FALSE;
+		}
+
+		switch(variable_get('importkit_content_module_use', 'ubercart'))
+		{
+			case 'ubercart':
+				$node = node_load($argument->nid);
+				$node->guid1 = $argument->guid1;
+				$node->guid2 = $argument->guid2;
+				$node->_model = db_select('importkit_cml_offers', 'o')
+					->fields('o', array('model'))
+					->condition('guid1', $argument->guid1)
+					->condition('guid2', $argument->guid2)
+					->execute()
+					->fetchField();
+				$node->operation = 'update-stok';
+				if($result = cml_store_stock_ubercart_update_stock($node, $element))
+				{
+					node_save($node);
+				}
+
+				$context['message'] .= t('Update stock in @type nid: @nid "@title" from XML.<br>',
+					array(
+						'@nid' => $node->nid,
+						'@type' => $node->type,
+						'@title' => $product_title,
+					)
+				);
+			break;
+
+			case 'commerce':
+				$product = commerce_product_load($argument->pid);
+				$product->guid1 = $argument->guid1;
+				$product->guid2 = $argument->guid2;
+				$product->nid = $argument->nid;
+				$product->operation = 'update-stok';
+				$result = cml_store_stock_commerce_update_stock($product, $element);
+				//commerce_product_save($product);
+
+				$context['message'] .= t('Update stock in @type pid: @pid "@title" from XML.<br>',
+					array(
+						'@pid' => $product->product_id,
+						'@type' => $product->type,
+						'@title' => $product_title,
+					)
+				);
+			break;
+		}
+
+		return $result;
+	}
+
+	$context['message'] .= t('<b style="color:red">The cache guid: @guid1#@guid2 is empty in the "cml_store_stock"</b><br>',
+		array(
+			'@guid1' => $argument->guid1,
+			//'@guid2' => $argument->guid2
+			'@guid2' => isset($argument->guid2) ? $argument->guid2 : '' // PATCHED
+		)
+	);
+
+	return FALSE;
+}
+
+function cml_store_stock_ubercart_update_stock(&$node, $element)
+{
+	$form_state = array(
+		'values' => array(
+		'nid' => $node->nid,
+		'stock' => array(),
+		),
+	);
+
+	$model = isset($node->_model)? $node->_model: $node->model;
+
+	$form_state['values']['stock'][] = array(
+		'sku' => $model,
+		'active' => TRUE,
+		'stock' => (float)$element->Количество,
+		'threshold' => 0,
+	);
+
+	require_once(drupal_get_path('module', 'uc_stock') . '/uc_stock.admin.inc');
+
+	uc_stock_edit_form_submit(NULL, $form_state);
+
+	return !form_get_errors()? TRUE: FALSE;
+}
+
+function cml_store_stock_commerce_update_stock(&$product, $element)
+{
+	$qty = (string)$element->Количество;
+	$wrapper = entity_metadata_wrapper('commerce_product', $product);
+	$wrapper->commerce_stock->set(intval($qty));
+	return $wrapper->save();
+}
+
+function cml_store_stock_get_stock()
+{
+	return db_query("SELECT COUNT(pid) FROM {importkit_cml_stock}")->fetchField();
+}
+
+function cml_store_stock_node_update($node)
+{
+	if ($node->type == variable_get('importkit_content_node_type', 'product') &&
+	isset($node->guid2) &&
+	(isset($node->operation) && $node->operation == 'update-stok'))
+	{
+		/*if(!db_select('importkit_cml_stock', 'o')
+		->fields('o', array('nid'))
+		->condition('guid1', $node->guid1)
+		->condition('guid2', $node->guid2)
+		->execute()
+		->fetchField())
+		{
+				if (!@db_query("INSERT INTO {importkit_cml_stock} (`guid1`, `guid2`, `pid`, `nid`)
+				VALUES (:guid1, :guid2, :pid, :nid)",
+				array(
+				':guid1' => $node->guid1,
+				':guid2' => $node->guid2,
+				':pid' => 0,
+				':nid' => $node->nid
+				)));
+		}*/
+
+		db_merge('importkit_cml_stock')
+			->key(array(
+			'guid1' => $node->guid1,
+			'guid2' => $node->guid2,
+			))
+			->fields(array(
+			'guid1' => $node->guid1,
+			'guid2' => $node->guid2,
+			'pid' => 0,
+			'nid' => $node->nid,
+			))
+			->execute();
+
+	}
+}
+
+function cml_store_stock_node_delete($node)
+{
+	if (!cml_store_content_is_product($node)) return;
+
+	db_query("DELETE FROM {importkit_cml_stock} WHERE nid = :nid", array(':nid' => $node->nid));
+}
+
+function cml_store_stock_entity_update($entity, $entityType)
+{
+	if ($entityType == 'commerce_product' &&
+	isset($entity->guid2) &&
+	(isset($entity->operation) && $entity->operation == 'update-stok')
+	)
+	{
+
+		/*db_merge('importkit_cml_stock')
+			->key(array('guid1' => $entity->guid1, 'guid2' => $entity->guid2, 'nid' => $entity->nid))
+			->fields(array(
+				'pid' => $entity->product_id,
+			))
+			->execute();*/
+
+		db_merge('importkit_cml_price')
+			->key(array(
+			'guid1' => $entity->guid1,
+			'guid2' => $entity->guid2,
+			'nid' => $entity->nid,
+			))
+			->fields(array(
+			'guid1' => $entity->guid1,
+			'guid2' => $entity->guid2,
+			'pid' => $entity->product_id,
+			'nid' => $entity->nid,
+			))
+			->execute();
+	}
+}
+
+function cml_store_stock_entity_delete($entity, $entityType)
+{
+	if ($entityType == 'commerce_product')
+	{
+	 db_query("DELETE FROM {importkit_cml_stock} WHERE pid = :pid", array(':pid' => $entity->product_id));
+	}
+}

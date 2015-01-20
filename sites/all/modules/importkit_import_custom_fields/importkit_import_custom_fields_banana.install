@@ -1,0 +1,35 @@
+<?php
+/**
+ * @file
+ * Установочный файл модуля "importkit_import_custom_fields_banana"
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * Таблица для сохранения необработанных данных, описывающих товар
+ */
+function importkit_import_custom_fields_banana_schema() {
+  $schema['importkit_import_products_raw_data'] = array(
+    'description' => 'Stores raw XML data from import.xml per product GUID',
+    'fields' => array(
+      'guid' => array(
+        'description' => 'Short GUID (length 36) of base product',
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        // 'serialize' => TRUE,
+        'description' => 'Raw XML data from import in CML standard',
+      ),
+    ),
+    'primary key' => array('guid'),
+  );
+
+  return $schema;
+}

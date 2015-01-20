@@ -1,0 +1,6 @@
+name = comf5 views filter
+description = comf5 views filter
+package = Views
+core = 7.x
+dependencies[] = views
+

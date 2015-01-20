@@ -1,0 +1,69 @@
+<?php
+
+function catalog_menu_block_info(){
+	$blocks = array();
+  $blocks['catalog_menu'] = array(
+    'info' => t('Умное меню каталога')
+  );
+  return $blocks;
+}
+
+function catalog_menu_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'catalog_menu':
+      $block['subject'] = t('');
+      
+      $vocabulary_obj = taxonomy_vocabulary_machine_name_load('product_kind');
+      $vid = $vocabulary_obj->vid;
+
+      $path = drupal_get_path_alias();
+      $url_sections = explode("/", $path);
+      array_shift($url_sections);
+
+      $sub_menu = '';
+
+      //создаем меню верхнего уровня
+      $tree = taxonomy_get_tree($vid, 0, 1, 1);
+      foreach($tree as $term){
+        $items[] = l($term->name, 'taxonomy/term/' . $term->tid, array('attributes'=>array('class'=>'item')));
+      }
+      $top_level_menu = theme(
+                              'item_list', 
+                              array(
+                                    "items" => $items, 
+                                    "attributes" => array("class"=>"top-level-menu")
+                                    )
+                              );
+      
+      //создаем меню для каждой секции урла
+      foreach($url_sections as $index => $term_name) {
+        $name = preg_replace("/\-/", " ", $term_name);
+        $term = current(taxonomy_get_term_by_name($name));
+        
+        if(isset($term->tid)){
+          $items = array();
+          $tree = taxonomy_get_tree($vid, $term->tid, 1, 1);
+        
+          foreach($tree as $term){
+            $items[] = l($term->name, 'taxonomy/term/' . $term->tid);
+          }
+          $sub_menu .= theme(
+                              'item_list', 
+                              array(
+                                    'items' => $items,
+                                    "attributes" => array("class"=>"menu-level-".($index+1))
+                                    )
+                            );
+        }
+      
+      }
+
+      $block['content'] = $top_level_menu . $sub_menu;
+      
+      break;
+  }
+
+  return $block;
+}

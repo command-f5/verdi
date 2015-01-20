@@ -1,0 +1,33 @@
+<?php
+
+function catalog_menu_block_info(){
+	$blocks = array();
+  $blocks['catalog_menu'] = array(
+    'info' => t('Умное меню каталога'),
+	 'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+function catalog_menu_block_view($delta = '') {
+  $block = array();
+  
+	/*
+  switch ($delta) {
+    case 'catalog_menu':
+      $block['subject'] = t('');
+      
+	 	$menu = menu_build_tree('menu-katalog', array('max_depth'=>3));
+		echo "<pre>OLO2
+		";
+		$menu2 = menu_tree_output($menu);
+		//print_r($menu2);
+		//$tempRender = ;
+		$menu_items = render($menu2);
+		$block['content'] = $menu_items;
+      
+      break;
+  }
+*/
+  return $block;
+}

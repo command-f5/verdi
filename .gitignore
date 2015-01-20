@@ -1,0 +1,45 @@
+cache
+home
+stats
+
+# Patch/diff artifacts.
+*.patch
+*.diff
+*.orig
+*.rej
+interdiff*.txt
+# emacs artifacts.
+*~
+\#*\#
+
+
+# VI swap file
+*.swp
+
+
+# Hidden files.
+.DS*
+.project
+
+
+# Windows links.
+*.lnk
+
+
+# Temporary files.
+tmp*
+
+# Ignore configuration files that may contain sensitive information.
+sites/*/settings*.php
+
+# Ignore paths that contain user-generated content.
+sites/*/files
+sites/*/private
+
+# Exclude IDE's project directory
+nbproject
+.idea
+
+*.tar.gz
+*.tar
+*.zip

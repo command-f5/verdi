@@ -1,0 +1,77 @@
+<?php
+
+function cml_store_example_importkit_call_backs()
+{
+	return array(
+		// Обработчик XML
+		'Товары' => 'cml_store_example_parse_products',
+		'Предложения' => 'cml_store_example_parse_offers',
+	);
+}
+
+function cml_store_example_importkit_info()
+{
+	$path = drupal_get_path('module', 'cml_store_example') . '/includes';
+
+	return array(
+		'ImportkitListnerExample' => $path . '/listners/ImportkitListnerExample',
+	);
+}
+
+// Обрабатывает import.xml
+function cml_store_example_parse_products($reader, $path, $ver, $created)
+{
+	return TRUE;
+}
+
+// Обрабатывает offers.xml
+function cml_store_example_parse_offers($reader, $path, $ver, $created)
+{
+	return TRUE;
+}
+
+function cml_store_example_get_products()
+{
+	return 0;
+}
+
+function cml_store_example_get_offers()
+{
+	return 0;
+}
+
+function cml_store_example_get_products_imported($field = 'pid')
+{
+	return array();
+}
+
+function cml_store_example_get_offers_imported($field = 'nid')
+{
+	return array();
+}
+
+function cml_store_example_get_imports_content()
+{
+	return array();
+}
+
+function cml_store_example_get_offers_content()
+{
+	return array();
+}
+
+function cml_store_example_node_remove($pid)
+{
+	return TRUE;
+}
+
+function cml_store_example_offer_remove($pid)
+{
+	return TRUE;
+}
+
+function cml_store_example_batch($argument, $call_back = '', $options, &$context)
+{
+	return TRUE;
+}
+

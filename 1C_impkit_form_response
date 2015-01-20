@@ -1,0 +1,15 @@
+HTTP/1.1 200 OK
+Server: nginx/1.6.0
+Date: Sun, 09 Nov 2014 11:26:21 GMT
+Content-Type: text/html
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-Powered-By: PHP/5.4.23
+Expires: Sun, 09 Nov 2014 11:26:20 GMT
+Cache-Control: no-cache
+ETag: "1415532380"
+Last-Modified: Sun, 09 Nov 2014 11:26:20 GMT
+Vary: Accept-Encoding
+
+<br />
+<b>Fatal error</b>:  Cannot create references to/from string offsets nor overloaded objects in <b>/var/www/clients/client46/web253/web/includes/common.inc</b> on line <b>6751</b><br />

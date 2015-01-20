@@ -1,0 +1,6 @@
+name = Importkit  products import for Banana
+description = Импорт полей в виде строк и чисел, а не терминов таксономии
+core = 7.x
+package = "ComF5"
+
+dependencies[] = cml_properties_import

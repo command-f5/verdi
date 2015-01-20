@@ -1,0 +1,502 @@
+<?php
+/**
+ * @file
+ * Самостоятельный импорт полей из элемента XML в товар / витрину (в обход стандартных механизмов ImportKIT)
+ */
+
+define ('IMPORTKIT_IMPORT_CUSTOM_FIELDS_BANANA_MAX_AGE', 192);
+define ('IMPORTKIT_IMPORT_CUSTOM_FIELDS_BANANA_RAW_TABLE', 'importkit_import_products_raw_data');
+
+
+/**
+ * Implements hook_importkit_product().
+ * Записывает данные в строковые и числовые поля.
+ * @param  stdClass $product      - продукт в Commerce
+ * @param  SimpleXMLElement $element  - элемент обновлённых данных из offers.xml
+ */
+function importkit_import_custom_fields_banana_importkit_product($op, $product, $element) {
+  $product_wrapper = entity_metadata_wrapper('commerce_product', $product);
+
+  if (isset($element->ЗначенияСвойств)) {
+    // этот прогон идёт по файлу "import.xml" - "Обновить товары"
+
+    // сохраняем данные из import.xml на случай если у этого товара будут характеристики (пока не знаем)
+    //~ $xml = $element->asXML();
+    //~ $guid = (string) $element->Ид;
+    //~ db_merge(IMPORTKIT_IMPORT_CUSTOM_FIELDS_BANANA_RAW_TABLE)
+      //~ ->key(array('guid' => $guid))
+      //~ ->fields(array(
+        //~ 'guid' => $guid,
+        //~ 'data' => $xml
+      //~ ))
+      //~ ->execute();
+
+    _importkit_import_custom_fields_banana_add_properties($product_wrapper, $element);
+  }
+  else if ($op == 'create') {
+    // Идёт прогон по файлу offers.xml - "Импорт товарных предложений"
+    //~ $guid = (string) $element->Ид;
+    //~ $isCharacteristics = strpos($guid, '#') !== FALSE;
+    //~ if ($isCharacteristics) {
+      //~ // обрабатываем товар, которых отличается от "базового" набором характеристик.
+//~ 
+      //~ // получаем описание базового товара
+      //~ $base_guid = substr($guid, 0, 36);
+      //~ $result = db_select(IMPORTKIT_IMPORT_CUSTOM_FIELDS_BANANA_RAW_TABLE, 'r')
+        //~ ->fields('r', array('data'))
+        //~ ->condition('guid', $base_guid)
+        //~ ->execute()
+        //~ ->fetchAssoc();
+      //~ $base_element = new SimpleXMLElement($result['data']);
+//~ 
+      //~ // Добавляем свойства базового товара к этому товару.
+      //~ _importkit_import_custom_fields_banana_add_properties($product_wrapper, $base_element);
+    //~ }
+  }
+
+  // я не помню сейчас, было ли важно делать это именно на шаге "update" или можно совместить
+  //  с шагом "create"
+  //~ if ($element && isset($element->ХарактеристикиТовара) && $op=='update') {
+    //~ // dpm($element);
+    //~ // dpm(_importkit_import_custom_fields_banana_simpleXMLElement_to_array($element));
+//~ 
+    //~ if (is_null($product_wrapper->value())) {
+      //~ watchdog("import_custom_fields_banana", "Не могу получить враппер");
+      //~ return;
+    //~ }
+//~ 
+    //~ foreach ($element->ХарактеристикиТовара->children() as $attribute) {
+      //~ $attribute_name = $attribute->Наименование;
+      //~ $attribute_value = $attribute->Значение;
+//~ 
+      //~ switch ($attribute_name) {
+        //~ case 'Вес ребёнка, кг':
+          //~ // dpm($product);
+          //~ $minmax = _importkit_import_custom_fields_banana_get_extended_parsing($attribute_value);
+          //~ // dpm($minmax);
+          //~ $product_wrapper->field_child_weight_min = $minmax[0];
+          //~ $product_wrapper->field_child_weight_max = $minmax[1];
+          //~ break;
+        //~ case 'Вес, г':
+          //~ $product_wrapper->field_weight_v = (int)$attribute_value; break;
+        //~ case 'Возраст':
+          //~ // dpm($product);
+          //~ $minmax = _importkit_import_custom_fields_banana_get_extended_parsing($attribute_value);
+          //~ // dpm($minmax);
+          //~ $product_wrapper->field_age_min = (int)$minmax[0];
+          //~ $product_wrapper->field_age_max = (int)$minmax[1];
+          //~ break;
+        //~ case 'Кол-во в упаковке, шт':
+          //~ $product_wrapper->field_items_per_pack_v = (int)$attribute_value; break;
+        //~ case 'Объём, л':
+          //~ $product_wrapper->field_volume_litres_v = (float)$attribute_value; break;
+        //~ case 'Объём, мл':
+          //~ $product_wrapper->field_volume_v = (int)$attribute_value; break;
+        //~ case 'Размер одежды крупной':
+          //~ $product_wrapper->field_clothing_size_v = (int)$attribute_value; break;
+        //~ case 'Размер перчаток':
+          //~ $product_wrapper->field_gloves_size_v = (int)$attribute_value; break;
+        //~ case 'Размер носков':
+          //~ $product_wrapper->field_socks_size_v = (int)$attribute_value; break;
+        //~ case 'Размер головных уборов':
+          //~ $product_wrapper->field_hats_size_v = (int)$attribute_value; break;
+        //~ case 'Размер обуви':
+          //~ $product_wrapper->field_footwear_size_v = (int)$attribute_value; break;
+//~ 
+        //~ default:
+          //~ # code...
+          //~ break;
+      //~ }
+    //~ }
+    //~ $product_wrapper->save();
+  //~ }
+}
+
+/**
+ * Задать поля товара в Commerce значениями из свойств товара в 1С
+ * @param EntityDrupalWrapper $product_wrapper
+ *   товар, который надо обновить
+ * @param SimpleXMLElement $element
+ *   Данные из файла import.xml по этому товару
+ */
+function _importkit_import_custom_fields_banana_add_properties($product_wrapper, $element) {
+
+  if (isset($element->ЗначенияСвойств)) {
+
+    $properties = importkit_import_custom_fields_extract_properties($element->ЗначенияСвойств->ЗначенияСвойства);
+
+    foreach ($properties as $guid => $property) {
+      // получим имя поля товара по имени свойства
+      $field_name = _importkit_import_custom_fields_banana_get_field_name_by_property($guid);
+
+      if ($field_name) {
+        $field_info = _importkit_import_custom_fields_banana_get_field_info_by_name($field_name, $product_wrapper->type->value());
+        if ($field_info['type'] != 'taxonomy_term') {
+          //~ if ($field_info['type'] == 'boolean') {
+            //~ $property['value'] = strtolower("true") == 'true' ;
+          //~ }
+          //~ $product_wrapper->$field_name = $property['value'];
+          // $product->$field_name = array($product->language => array(0 => array('value' => $property['value'])));
+        }
+        else {
+          // не RAW:
+          // получим словарь по полю товара
+          $vocabulary_name = $field_info['bundle'];
+          // получим/создадим термин по значению свойства в этом словаре
+          $value_tid = _importkit_import_custom_fields_banana_getcreate_term_by_voc($property['value'], $vocabulary_name);
+          // сохраним термин в поле
+          $product_wrapper->$field_name = $value_tid;
+          // $product->$field_name = array($product->language => array(0 => array('tid' => $value_tid)));
+        }
+      }
+
+      // Дополнительная / альтернативная обработка некоторых свойств.
+      //~ switch ($property['name']) {
+        //~ case 'Вес ребёнка, кг':
+          //~ // dpm($product);
+          //~ $minmax = _importkit_import_custom_fields_banana_get_extended_parsing($property['value']);
+          //~ // dpm($minmax);
+          //~ $product_wrapper->field_child_weight_min = $minmax[0];
+          //~ $product_wrapper->field_child_weight_max = $minmax[1];
+          //~ break;
+        //~ case 'Возраст':
+          //~ // dpm($product);
+          //~ $minmax = _importkit_import_custom_fields_banana_get_extended_parsing($attribute_value);
+          //~ // dpm($minmax);
+          //~ $product_wrapper->field_age_min = (int)$minmax[0];
+          //~ $product_wrapper->field_age_max = (int)$minmax[1];
+          //~ break;
+        //~ case 'Размер одежды крупной':
+          //~ $product_wrapper->field_clothing_size_v = (int)$attribute_value; break;
+        //~ case 'Размер перчаток':
+          //~ $product_wrapper->field_gloves_size_v = (int)$attribute_value; break;
+        //~ case 'Размер носков':
+          //~ $product_wrapper->field_socks_size_v = (int)$attribute_value; break;
+        //~ case 'Размер головных уборов':
+          //~ $product_wrapper->field_hats_size_v = (int)$attribute_value; break;
+        //~ case 'Размер обуви':
+          //~ $product_wrapper->field_footwear_size_v = (int)$attribute_value; break;
+        //~ default:
+          //~ # code...
+          //~ break;
+      //~ }
+    }
+
+    $product_wrapper->save();
+  }
+}
+
+/**
+ * Объект SimpleXMLElement в массив для удобства dpm
+ * @param SimpleXMLElement $sxe
+ *   исходный объект
+ * @return array
+ *   массив для вывода (dpm)
+ */
+function _importkit_import_custom_fields_banana_simpleXMLElement_to_array($sxe) {
+  if ($sxe->count() == 0)
+    return (string) $sxe;
+  else {
+    $result = array(); $count = 0;
+    foreach ($sxe->children() as $childSXE) {
+      $result["$count: ".($childSXE->getName())] = _importkit_import_custom_fields_banana_simpleXMLElement_to_array($childSXE);
+      $count++;
+    }
+    return $result;
+  }
+}
+
+/**
+ * Распарсить строку описания диапазона и получить два значения - мин и макс.
+ * Года преобразовываются в месяца (*12)
+ * @param  String $value
+ *         строковое значение, содержащее описание диапазона из 1С
+ * @return array
+ *         [0] = float min, [1] = float max или IMPORTKIT_IMPORT_CUSTOM_FIELDS_BANANA_MAX_AGE,
+ *         если верхняя граница не указана. Возвращает пустой массив при ошибке.
+ */
+function _importkit_import_custom_fields_banana_get_extended_parsing($value) {
+  $month_pattern = "~([^а-яА-Я]мес([^а-яА-Я]|$)|[^а-яА-Я]месяц)~i";
+  $year_pattern = "~[^а-яА-Я](лет|год[а])([^а-яА-Я]|$)~i";
+
+  $matches = array();
+  // Паттерн: текст-число-текст-число-остальное
+  $success = preg_match("/([^0-9,.]*)([0-9,.]+)([^0-9,.]+)([0-9,.]+)([^0-9,.].*)/", $value, $matches);
+  if ($success === FALSE) {
+    drupal_set_message("Extended parsing error step 1",'error');
+    return array();
+  }
+  if ($success === 1) {
+    // найдено 2 числа в строке!
+    $val1 = (float) str_replace(',','.',$matches[2]);
+    $val2 = (float) str_replace(',','.',$matches[4]);
+
+    $has_month_3 = preg_match($month_pattern, $matches[3]);
+    $has_year_3 = preg_match($year_pattern, $matches[3]);
+    $has_month_5 = preg_match($month_pattern, $matches[5]);
+    $has_year_5 = preg_match($year_pattern, $matches[5]);
+
+    // явные указатели на год как единицу измерения
+    if ($has_year_3)
+      $val1 *= 12;
+    if ($has_year_5)
+      $val2 *= 12;
+
+    // для первого значения не задана единица вообще, а для второго - задано в годах, то используем года и для первого
+    if (!$has_year_3 && !$has_month_3 && $has_year_5 && !$has_month_5)
+      $val1 *= 12;
+
+    // наоборот, для второго значения не задана единица, а для первого - в годах, то используем года и для второго
+    if (!$has_year_5 && !$has_month_5 && $has_year_3 && !$has_month_3)
+      $val2 *= 12;
+
+    // dpm("Extended parsing: $val1 - $val2");
+
+    return ($val2 > $val1) ? array($val1, $val2) : array($val2, $val1) ;
+  }
+
+  // Паттерн: текст-число-остальное
+  $success = preg_match("/([^0-9,.]*)([0-9,.]+)([^0-9,.]*)/", $value, $matches);
+  if ($success === FALSE) {
+    drupal_set_message("parsing input value step two",'error');
+    return array();
+  }
+  if ($success === 1) {
+    // dpm("Extended parsing found 1 value");
+    $val = (float) str_replace(',','.',$matches[2]);
+
+    $has_month_3 = preg_match($month_pattern, $matches[3]);
+    $has_year_3 = preg_match($year_pattern, $matches[3]);
+
+    $has_from_1 = preg_match("~(^|[^а-яА-Я])(от|с|после)[^а-яА-Я]~i", $matches[1]); // до Х
+    $has_to_1 = preg_match("~(^|[^а-яА-Я])до[^а-яА-Я]~i", $matches[1]); // от Х
+
+    // явные указатели на год как единицу измерения
+    if ($has_year_3) {
+      $val *= 12;
+    }
+
+    $s = 'FLAGS: ';
+    $s .= ($has_from_1 ? 'from! ': '').($has_to_1 ? 'to! ': '').($has_month_3 ? 'month! ': '').($has_year_3 ? 'year! ': '');
+
+    if ($has_from_1 && !$has_to_1) {
+      return array($val, IMPORTKIT_IMPORT_CUSTOM_FIELDS_BANANA_MAX_AGE);
+    }
+    if (!$has_from_1 && $has_to_1) {
+      return array(0, $val);
+    }
+
+    return array($val, $val);
+  }
+
+  // иначе возвращаем пустой, как ошибку
+  return array();
+}
+
+
+/**
+ * Implements hook_importkit_node().
+ *
+ * Проверяет продукт на совпадение названия с другими продуктами и заполняет взаимно поля "Похожие товары"
+ */
+function importkit_import_custom_fields_banana_importkit_node($op, $node, $element) {
+  // dpm("node $op");  dpm(_importkit_import_custom_fields_banana_simpleXMLElement_to_array($element));
+
+  // обёртка вокруг витрины
+  //~ $node_wrapper = entity_metadata_wrapper('node', $node);
+//~ 
+  //~ // существующие витрины с похожим названием.
+  //~ $similar_nodes = node_load_multiple(array(), array('title' => $node->title));
+//~ 
+  //~ // удалить ссылки на эту ноду (на случай, если её название поменялось)
+  //~ foreach ($node_wrapper->field_variants as $variant) {
+    //~ if ($variant->value()) {
+      //~ _importkit_import_custom_fields_banana_remove_variant_from_display($variant, $node);
+    //~ }
+  //~ }
+//~ 
+  //~ // добавить новые ссылки, если надо.
+  //~ foreach ($similar_nodes as $node_id => $similar_node) {
+    //~ // FIXME: лучше использовать vid??
+    //~ if ($node_id != $node->nid) {
+      //~ // два товара с одинаковыми наименованиями.
+      //~ _importkit_import_custom_fields_banana_add_variant_to_display($node, $similar_node);
+      //~ _importkit_import_custom_fields_banana_add_variant_to_display($similar_node, $node);
+    //~ }
+  //~ }
+
+  // switch ($op) {
+  //   case 'create':
+  //     break;
+  //   case 'update':
+  //     break;
+  // }
+}
+
+/**
+ * Удаляет витрину из списка вариантов другой витрины.
+ * @param  EntityDrupalWrapper $node_wrapper
+ *         нода, которую правим
+ * @param  stdClass $target_node
+ *         нода, ссылку на которую надо удалить
+ */
+function _importkit_import_custom_fields_banana_remove_variant_from_display(EntityDrupalWrapper $node_wrapper, $target_node) {
+  $variants_ids = $node_wrapper->field_variants->raw();
+  $variants_ids = array_diff($variants_ids, [$target_node->nid]);
+  $node_wrapper->field_variants->set($variants_ids);
+}
+
+/**
+ * Добавить ссылку на витрину в другую витрину.
+ * @param  stdClass $node
+ *         витрина, куда будет добавлена ссылка
+ * @param  stdClass $target_node
+ *         витрина, на которую будет добавлена ссылка (если ещё нет).
+ */
+function _importkit_import_custom_fields_banana_add_variant_to_display($node, $target_node) {
+  $node_wrapper = entity_metadata_wrapper('node', $node);
+  $variants_ids = $node_wrapper->field_variants->raw();
+  if (!in_array($target_node->nid, $variants_ids)) {
+    // такоко варианта ещё не записано, добавляем.
+    $variants_ids[] = $target_node->nid;
+    $node_wrapper->field_variants->set($variants_ids);
+  }
+}
+
+/**
+ * Получить название поля товара, соответствующее имени свойства из 1С.
+ * Лучше бы использовать GUID для этих целей, конечно.
+ * @param String $property_name
+ *   Имя свойства по классификатору 1С
+ * @return String
+ *   машинное имя поля товара, в которое нужно заносить значение этого свойства.
+ */
+function _importkit_import_custom_fields_banana_get_field_name_by_property($guid) {
+  $prop_to_field = array(
+    '884071dd-efa6-11e3-a8d6-001517115991' => 'field_producer',
+    '0f673601-13be-11e4-a8d6-001617115991' => 'field_fabric_composition',
+    '884071ed-efa6-11e3-a8d6-001517115991' => 'field_composit',
+    '884071e5-efa6-11e3-a8d6-001517115991' => 'field_roll_width',
+	
+	'2954a922-60b5-11e4-b636-001617115991' => 'field_new',
+	'2954a921-60b5-11e4-b636-001617115991' => 'field_hot_offer',
+    '27e2c6cb-5f23-11e4-b636-001617115991' => 'field_show_on_site',
+	'2954a943-60b5-11e4-b636-001617115991' => 'field_action',
+	'83959b81-a695-45d1-b6df-938c86ecab97' => 'field_provider',
+	'5010b8ea-1317-11e4-a8d6-001617115991' => 'field_color'
+  );
+  return $prop_to_field[$guid];
+}
+
+/**
+ * Получить свойства поля товара по имени поля
+ * @param String $field_name
+ *   машинное имя поля товара
+ * @param String $product_bundle
+ *   машинное имя бандла товара
+ * @return array
+ *   массив с описанием поля
+ */
+function _importkit_import_custom_fields_banana_get_field_info_by_name($field_name, $product_bundle) {
+  $product = entity_metadata_wrapper('commerce_product', NULL, array('bundle' => $product_bundle));
+  $product_fields = $product->getPropertyInfo();
+  return $product_fields[$field_name];
+}
+
+/**
+ * Найти термин по имени термина и машинному имени словаря.
+ * @param String $term_name
+ *   имя термина
+ * @param String $vocabulary_name
+ *   машинное имя словаря таксономии
+ * @return int
+ *   ID термина. Если термина с таким именем не существует, он будет создан.
+ *   NULL в случае ошибки.
+ */
+function _importkit_import_custom_fields_banana_getcreate_term_by_voc($term_name, $vocabulary_name) {
+
+  $vocabulary = taxonomy_vocabulary_machine_name_load($vocabulary_name);
+  if (!$vocabulary) {
+    return NULL;
+  }
+  $vid = $vocabulary->vid;
+
+  $query = new EntityFieldQuery;
+  $result = $query
+    ->entityCondition('entity_type', 'taxonomy_term')
+    ->propertyCondition('name', $term_name)
+    ->propertyCondition('vid', $vid)
+    ->range(0, 1)
+    ->execute();
+
+  if (isset($result['taxonomy_term'])) {
+    return array_keys($result['taxonomy_term'])[0];
+  }
+
+  // термина не существует, надо создать.
+  $term = (object) array(
+     'name' => $term_name,
+     'vid' => $vid,
+  );
+  taxonomy_term_save($term);
+  return $term->tid;
+}
+
+
+/**
+ * Перевод списка свойств из файла import.xml в массив для импорта в Commerce
+ * @param  SimpleXMLElement $properties
+ *   Массив элементов "ЗначенияСвойства"
+ * @return array
+ *    { 'GUID1' => {
+ *                    'raw' => bool,
+ *                    'name' => String
+ *                    'value' => String
+ *                 },
+ *      ...
+ *    }
+ */
+function importkit_import_custom_fields_extract_properties($properties) {
+  $converted_properties = array();
+
+  // для каждого свойства...
+  foreach ($properties as $property) {
+    $property_guid = (String) $property->Ид;
+    $property_value = (String) $property->Значение;
+    if (empty($property_value)) {
+      // это свойство не задано
+      continue;
+    }
+
+    $property_tid = cml_properties_import_get_property_term($property_guid);
+    if (!$property_tid) {
+      // Очень странно. Должно быть ошибка.
+      // модуль cml_properties_import должен был создать термин для каждого свойства
+      continue;
+    }
+
+    $property_wrapper = entity_metadata_wrapper('taxonomy_term', $property_tid);
+
+    if (strlen($property_value) != 36) { // длина GUID
+      // это свойство содержит прямое значение
+      $converted_properties[$property_guid] = array(
+        'raw' => TRUE,
+        'name' => $property_wrapper->name->value(),
+        'value' => $property_value
+      );
+      continue;
+    }
+
+    // Значение - тоже GUID
+    // предполагаем отсутствие дубликатов GUID, или по крайней мере, что дубликаты должны иметь одинаковые значения "имя"
+    $value_tid = $property_tid = cml_properties_import_get_property_term($property_value);
+    $value_wrapper = entity_metadata_wrapper('taxonomy_term', $value_tid);
+
+    $converted_properties[$property_guid] = array(
+      'raw' => FALSE,
+      'name' => $property_wrapper->name->value(),
+      'value' => $value_wrapper->name->value(),
+    );
+  }
+  return $converted_properties;
+}

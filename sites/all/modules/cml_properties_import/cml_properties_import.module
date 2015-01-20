@@ -1,0 +1,146 @@
+<?php
+/**
+ * @file
+ * Модуль импорта классификатора 1С
+ */
+
+define('CML_PROPERTIES_IMPORT_TAXONOMY_NAME', 'imported_products_properties');
+
+/**
+ * Implements hook_importkit_call_backs().
+ */
+function cml_properties_import_importkit_call_backs()
+{
+  return array(
+    // Обработчик XML
+    'secret_handler' => 'cml_properties_import_parse_properties',
+  );
+}
+
+/**
+ * Implements hook_importkit_info().
+ */
+function cml_properties_import_importkit_info()
+{
+  $path = drupal_get_path('module', 'cml_properties_import') . '/includes';
+
+  return array(
+    'ImportkitListnerPropertiesImport' => $path . '/listners/ImportkitListnerPropertiesImport',
+  );
+}
+
+// Обрабатывает import.xml
+function cml_properties_import_parse_properties($reader, $path, $ver, $created)
+{
+  $properties = simplexml_load_string(trim($reader->readOuterXml()));
+
+  // Цикл по свойствам.
+  foreach ($properties as $property) {
+    $property_guid = (String) $property->Ид;
+    $property_name = (String) $property->Наименование;
+
+    $parent_tid = _cml_properties_import_getcreate_property_term($property_guid, $property_name, NULL);
+
+    // Цикл по значениям свойств, если есть
+    if (isset($property->ВариантыЗначений->Справочник)) {
+      foreach ($property->ВариантыЗначений->Справочник as $property_value) {
+        $property_value_guid = (String) $property_value->ИдЗначения;
+        $property_value_value = (String) $property_value->Значение;
+
+        $value_tid = _cml_properties_import_getcreate_property_term($property_value_guid, $property_value_value, $parent_tid);
+      }
+    }
+  }
+  return TRUE;
+}
+
+/**
+ * Получить термин словаря для этого GUID или создать, если ещё не существует.
+ *
+ * @param String $guid
+ *   GUID из 1С. Обязательный параметр.
+ * @param String $property_name
+ *   Имя свойства или имя значения. Если термин не существует, он будет создан с этим именем.
+ * @param int $parent_term
+ *   родительский термин. Если термин с $guid не существует и
+ *   этот параметр не пустой, созданный термин будет потомком этого.
+ *
+ * @return int
+ *   tid найденного или созданного термина. NULL в случае ошибки.
+ */
+function _cml_properties_import_getcreate_property_term($guid, $property_name=NULL, $parent_term=0) {
+  $vocabulary = taxonomy_vocabulary_machine_name_load(CML_PROPERTIES_IMPORT_TAXONOMY_NAME);
+  if (!$vocabulary) {
+    return NULL;
+  }
+  $vid = $vocabulary->vid;
+
+  $tid = cml_properties_import_get_property_term($guid);
+
+  if (!$tid) {
+    // термин не найден, создаём новый.
+    if (empty($property_name)) {
+      // имя - обязательное поле.
+      return NULL;
+    }
+    $term = (object) array(
+       'name' => $property_name,
+       'vid' => $vid,
+       'parent' => $parent_term,
+    );
+    taxonomy_term_save($term);
+    $term_wrapped = entity_metadata_wrapper('taxonomy_term', $term->tid);
+    $term_wrapped->field_guid = $guid;
+    $term_wrapped->save();
+    $tid = $term_wrapped->tid->value();
+  }
+  else {
+    // термин получен. проверим целостность.
+    $term_wrapped = entity_metadata_wrapper('taxonomy_term', $tid);
+    if (!$term_wrapped->value()) {
+      watchdog('cml_properties_import', "Не могу получить враппер существующего термина");
+      return NULL;
+    }
+
+    if (!empty($property_name) &&
+      ($term_wrapped->name->value() != $property_name)) {
+      // имя отличается - переименовываем.
+      $term_wrapped->name = $property_name;
+      $term_wrapped->save();
+    }
+  }
+
+  return $tid;
+}
+
+/**
+ * Получить ИД свойства номенклатуры (значения свойства) по GUID
+ * @param String $guid
+ *   GUID из 1С
+ * @return int
+ *   tid термина или NULL
+ */
+function cml_properties_import_get_property_term($guid) {
+  if (empty($guid)) {
+    // обязательное поле.
+    return NULL;
+  }
+
+  $vocabulary = taxonomy_vocabulary_machine_name_load(CML_PROPERTIES_IMPORT_TAXONOMY_NAME);
+  if (!$vocabulary) {
+    return NULL;
+  }
+  $vid = $vocabulary->vid;
+
+  // получим термин по полю GUID
+  $query = new EntityFieldQuery;
+  $result = $query
+    ->entityCondition('entity_type', 'taxonomy_term')
+    ->propertyCondition('vid', $vid) // только в нужном словаре.
+    ->fieldCondition('field_guid', 'value', $guid)
+    ->range(0, 1)
+    ->execute();
+
+  return isset($result['taxonomy_term']) && count($result['taxonomy_term']) ?
+    array_keys($result['taxonomy_term'])[0] : NULL;
+}
