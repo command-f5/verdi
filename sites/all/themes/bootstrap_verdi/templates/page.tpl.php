@@ -73,25 +73,26 @@
  * @ingroup themeable
  */
 ?>
-<header role="banner" id="page-header">
-  <?php if (!empty($site_slogan)): ?>
-    <p class="lead"><?php print $site_slogan; ?></p>
-  <?php endif; ?>
-  <div id="page-header-first"> 
+<header role="banner" id="page-header" class='container'>
+  <div class='row'>
+    <?php if (!empty($site_slogan)): ?>
+      <p class="lead"><?php print $site_slogan; ?></p>
+    <?php endif; ?>
+
     <?php print render($page['header_first']); ?>
+
+    <?php print render($page['header_second']); ?>
+    
+    <!-- customize filter -->
+    <script src="/sites/all/themes/bootstrap_verdi/js/filt.js"></script>
+    <style>@import url("/sites/all/themes/bootstrap_verdi/css/filt.css");</style>
+    <!-- / customize filter -->
+    <script src="/sites/all/themes/bootstrap_verdi/js/ajax_cart.js"></script>
+    <!-- / ajax cart add -->
   </div>
-  <div id="page-header-second"> 
-  <?php print render($page['header_second']); ?>
-  </div>
-  <!-- customize filter 
-  <script src="/sites/all/themes/bootstrap_verdi/js/filt.js"></script>
-  <style>@import url("/sites/all/themes/bootstrap_verdi/css/filt.css");</style>
-  <!-- / customize filter -->
-  <script src="/sites/all/themes/bootstrap_verdi/js/ajax_cart.js"></script>
-  <!-- / ajax cart add -->
 </header> <!-- /#page-header -->
-<div id="navbar" role="banner" class="<?php print $navbar_classes; ?>">
-  <div class="container">
+<div id="navbar" role="banner" class="<?php print $navbar_classes;?>">
+  <div class="nav-bar-wrap">
     <div class="navbar-header">
       <?php if ($logo): ?>
       <a class="logo navbar-btn pull-left" href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>">
@@ -132,20 +133,18 @@
 
 <div class="main-container container">
 
-  <div class="row">
-
     <?php if (!empty($page['sidebar_first'])): ?>
       <aside class="col-sm-3" role="complementary">
         <?php print render($page['sidebar_first']); ?>
       </aside>  <!-- /#sidebar-first -->
     <?php endif; ?>
 
-    <section<?php print $content_column_class; ?>>
+
       <?php if (!empty($page['highlighted'])): ?>
         <div class="highlighted jumbotron"><?php print render($page['highlighted']); ?></div>
       <?php endif; ?>
       <?php /*if (!empty($breadcrumb)): print $breadcrumb; endif;*/?>
-      <a id="main-content"></a>
+<!--      <a id="main-content"></a>-->
       <?php print render($title_prefix); ?>
       <?php if (!empty($title)): ?>
         <h1 class="page-header"><?php print $title; ?></h1>
@@ -161,8 +160,9 @@
       <?php if (!empty($action_links)): ?>
         <ul class="action-links"><?php print render($action_links); ?></ul>
       <?php endif; ?>
-      <?php print render($page['content']); ?>
-    </section>
+
+        <?php print render($page['content']); ?>
+
 
     <?php if (!empty($page['sidebar_second'])): ?>
       <aside class="col-sm-3" role="complementary">
@@ -170,12 +170,29 @@
       </aside>  <!-- /#sidebar-second -->
     <?php endif; ?>
 
-  </div>
+
 </div>
-<footer class="footer container">
+<footer class="container">
   <?php print render($page['pre_footer']); ?>
   <?php print render($page['footer']); ?>
 </footer>
+
+<div class="modal fade" id="call-order" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Заказать звонок</h4>
+      </div>
+      <div class="modal-body">
+        <?php
+          $block = module_invoke('webform', 'block_view', 'node-26');
+          print render($block['content']);
+        ?>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Yandex.Metrika informer -->
 <a href="https://metrika.yandex.ru/stat/?id=27879024&amp;from=informer"

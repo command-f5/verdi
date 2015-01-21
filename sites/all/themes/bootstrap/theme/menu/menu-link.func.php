@@ -38,6 +38,9 @@ function bootstrap_menu_link(array $variables) {
   if (($element['#href'] == $_GET['q'] || ($element['#href'] == '<front>' && drupal_is_front_page())) && (empty($element['#localized_options']['language']))) {
     $element['#attributes']['class'][] = 'active';
   }
+  if(($element['#original_link']['menu_name'] == 'menu-katalog')){
+    $element['#attributes']['class'][] = 'col-xs-12 col-sm-6 col-md-4 col-lg-3';
+  }
   $output = l($element['#title'], $element['#href'], $element['#localized_options']);
   return '<li' . drupal_attributes($element['#attributes']) . '>' . $output . $sub_menu . "</li>\n";
 }
