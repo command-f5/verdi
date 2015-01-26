@@ -383,7 +383,8 @@ function _importkit_import_custom_fields_banana_get_field_name_by_property($guid
     '27e2c6cb-5f23-11e4-b636-001617115991' => 'field_show_on_site',
 	'2954a943-60b5-11e4-b636-001617115991' => 'field_action',
 	'83959b81-a695-45d1-b6df-938c86ecab97' => 'field_provider',
-	'5010b8ea-1317-11e4-a8d6-001617115991' => 'field_color'
+	'5010b8ea-1317-11e4-a8d6-001617115991' => 'field_color',
+	'abf72a36-a2d2-11e4-a153-001517115991' => 'field_sklad'
   );
   return $prop_to_field[$guid];
 }

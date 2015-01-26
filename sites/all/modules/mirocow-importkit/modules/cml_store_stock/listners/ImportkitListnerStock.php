@@ -19,6 +19,24 @@ class ImportkitListnerStock extends ImportkitListner implements InterfaceObserve
 		//global $user;
 
 		$form = array();
+
+		$form[__CLASS__] = array(
+		  '#type'        => 'fieldset',
+		  '#title'       => t('Stock settings'),
+		  '#description' => t('The stock configuration settings'),
+		  '#collapsible' => TRUE,
+		  '#collapsed'   => FALSE,
+		);
+
+		$form[__CLASS__]['importkit_product_current_stock'] = array(
+		  '#type'          => 'textfield',
+		  '#size'          => 50,
+		  '#title'         => t('The guid of current stock'),
+		  '#description'   => t('The guid of current stock'),
+		  '#weight'        => 31,
+		  '#default_value' => $this->getVariable('importkit_product_current_stock', ''),
+		);
+
 		return $form;
 	}
 
@@ -59,7 +77,7 @@ class ImportkitListnerStock extends ImportkitListner implements InterfaceObserve
 		$form[__CLASS__] = array(
 		 '#type' => 'fieldset',
 		 '#title' => 'Импорт позиций по остаткам',
-		 //'#description' => t('The stock update configuration settings'),
+		 '#description' => 'Импортирование: остатки товарных позиций',
 		 '#collapsible' => TRUE,
 		 '#collapsed' => FALSE,
 		);
@@ -89,12 +107,14 @@ class ImportkitListnerStock extends ImportkitListner implements InterfaceObserve
 							'#options' => array('import' => 'Импортировать информацию по остаткам'),
 						);
 					} else {
+
 						$form[__CLASS__]['amout_terms'] = array(
 							'#type' => 'item',
 							'#title' => t('Не установлен модуль !module',
 								array('!module' => l('commerce_ss', 'https://drupal.org/project/commerce_stock', array('absolute' => TRUE)))),
 							'#description' => '',
 						);
+
 					}
 				break;
 
@@ -155,7 +175,9 @@ class ImportkitListnerStock extends ImportkitListner implements InterfaceObserve
 			if (isset($form_state['values']['importkit_stock'])) {
 				switch(@(string)$form_state['values']['importkit_stock']['import']){
 					case 'import':
-						$this->setJob('import');
+						//$this->setJob('import');
+						$this->setJob('parse');
+						$this->setParam('parser', 'ImportkitParserCML');
 					break;
 				}
 			}
@@ -165,7 +187,9 @@ class ImportkitListnerStock extends ImportkitListner implements InterfaceObserve
 				$form_state['values']['importkit_products'] != 'remove') {
 				switch(@(string)$form_state['values']['importkit_stock']){
 					case 'update':
-						$this->setJob('update');
+						//$this->setJob('update');
+						$this->setJob('parse');
+						$this->setParam('parser', 'ImportkitParserCML');
 					break;
 					case 'remove':
 						//$imported = $this->exeCallBack('imported_stock', array());
@@ -179,30 +203,20 @@ class ImportkitListnerStock extends ImportkitListner implements InterfaceObserve
 		return $form;
 	}
 
-	public function parse($reader, $path, $ver, $created)
-	{
+	public function parse($reader, $path, $ver, $created) {
+		if ($reader->name == 'Предложения') {
+			return $this->exeCallBack($reader->name, array($reader, $path, $ver, $created));
+		}
 	}
 
-	public function finished($success, $results, $operations)
-	{
-		if($success && isset($results['method']) && $results['method'] == 'import')
-		{
-			// Регистрируем функцию-обработчик после выполнеия импорта контента
-			$this->setJob('prepaire_batch', $results['method']);
-		}
-
-		if($success && isset($results['method']) && $results['method'] == 'update')
-		{
-			// Регистрируем функцию-обработчик после выполнеия импорта контента
-			$this->setJob('prepaire_batch', $results['method']);
-		}
-
-		if($results['method'] == 'prepaire_batch')
-		{
-			// Регистрируем обработчик для Обработки offers
-			$imported = $this->exeCallBack('imported_offers', array('fields' => array('nid','pid','guid1', 'guid2')));
-			$this->setJob('batch', $imported);
-			$this->setParam('chunks', 100);
+	public function finished($success, $results, $operations) {
+		if ($success && isset($results['method']) && $results['method'] == 'parse') {
+			$keys = $this->exeCallBack('get_content_offers');
+			if (isset($keys)) {
+				// Регистрируем функцию обновления продукта
+				$this->setJob('batch', $keys);
+				$this->setParam('chunks', 50);
+			}
 		}
 
 	}

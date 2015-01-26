@@ -3,42 +3,6 @@ jQuery(document).ready(function($){
 });
 
 jQuery(document).ajaxSuccess(function(evt, request, settings){
-	/*
-	var is_catalog = jQuery('#views-exposed-form-catalog-block').attr('action') || false,
-		href = false;
-	if(is_catalog){
-		var p = parseInt(jQuery('.pagination').find('li.active > a').html()),
-			next_href = jQuery('.pagination').find('li.next > a').attr('href') || false,
-			prev_href = jQuery('.pagination').find('li.prev > a').attr('href') || false,
-			razn = 0, pag = 0;
-			
-		if(next_href){
-			razn = -1;
-			href = next_href;
-		} else if(prev_href){
-			razn = 1;
-			href = prev_href;
-		}
-		if( href ){
-			var matches = href.match(/(.+)&page=([0-9]+)/i);
-			pag = parseInt(matches[2])+razn;
-			
-			href = matches[1]+'&page='+pag;
-		} else {
-			var prid = jQuery('#edit-field-product-kind-tid-1').find('input.bef-select-as-radios.form-radio:checked').val() || false,
-				sku = jQuery('#edit-sku').val() || '',
-				pr_min = jQuery('#edit-commerce-price-amount-min').val() || '',
-				pr_max = jQuery('#edit-commerce-price-amount-max').val() || '',
-				hot = jQuery('#edit-field-hot-offer-value-1:checked').val() || '',
-				newst = jQuery('#edit-field-new-value-1:checked').val() || '';
-			if( prid ){
-				if( hot != '' ) hot = 'field_hot_offer_value[0]='+hot;
-				if( newst != '' ) newst = 'field_new_value[0]='+newst;
-				href = '/catalog?field_product_kind_tid_1='+prid+'&sku='+sku+'&commerce_price_amount[min]='+pr_min+'&commerce_price_amount[max]='+pr_max+'&'+hot+'&'+newst+'&page=0';
-			}
-		}
-	}
-	*/
 	jQuery('.commerce-add-to-cart').each(function(){
 		jQuery(this).attr({ action: window.location.href });
 	});

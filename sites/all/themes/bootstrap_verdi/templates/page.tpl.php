@@ -83,10 +83,6 @@
 
     <?php print render($page['header_second']); ?>
     
-    <!-- customize filter -->
-    <script src="/sites/all/themes/bootstrap_verdi/js/filt.js"></script>
-    <style>@import url("/sites/all/themes/bootstrap_verdi/css/filt.css");</style>
-    <!-- / customize filter -->
     <script src="/sites/all/themes/bootstrap_verdi/js/ajax_cart.js"></script>
     <!-- / ajax cart add -->
   </div>
